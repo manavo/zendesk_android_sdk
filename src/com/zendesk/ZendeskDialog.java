@@ -181,7 +181,10 @@ public class ZendeskDialog {
 					Log.d(TAG, line);
 				}
 				bufferReader.close();
-				
+	
+    aDialog.dismiss();
+				resetDialogView();
+			
 				message.getData().putString("submit", "successfully");
 				toastHandler.sendMessage(message);
 
@@ -313,8 +316,6 @@ public class ZendeskDialog {
 						}
 					};
 					new Thread(runnable).start();
-					aDialog.dismiss();
-					resetDialogView();
 				} else {
 					if (descriptionET.length() == 0)
 						descriptionTV.setTextColor(Color.RED);
