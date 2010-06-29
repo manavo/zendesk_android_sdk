@@ -298,7 +298,6 @@ public class ZendeskDialog {
 
 	private static View.OnClickListener buttonListener = new View.OnClickListener() {
 
-		@Override
 		public void onClick(View v) {
 			switch (v.getId()) {
 			case DialogInterface.BUTTON1:
