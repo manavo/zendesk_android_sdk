@@ -219,18 +219,26 @@ public class ZendeskDialog {
 		descriptionET.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
 		descriptionET.setMinLines(2);
 		descriptionET.setMaxLines(2);
+		descriptionET.setInputType(InputType.TYPE_CLASS_TEXT 
+				| InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+				| InputType.TYPE_TEXT_FLAG_AUTO_CORRECT );
 
 		subjectTV = new TextView(context);
 		subjectTV.setText("Subject:");
 		subjectTV.setTextColor(Color.WHITE);
 		subjectET = new EditText(context);
 		subjectET.setSingleLine(true);
+		subjectET.setInputType(InputType.TYPE_CLASS_TEXT 
+				| InputType.TYPE_TEXT_FLAG_CAP_WORDS
+				| InputType.TYPE_TEXT_FLAG_AUTO_CORRECT );
 
 		emailTV = new TextView(context);
 		emailTV.setText("E-Mail:");
 		emailTV.setTextColor(Color.WHITE);
 		emailET = new EditText(context);
 		emailET.setSingleLine(true);
+		emailET.setInputType(InputType.TYPE_CLASS_TEXT 
+				| InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS );
 
 		LinearLayout llBottom = new LinearLayout(context);
 		llBottom.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
@@ -298,7 +306,6 @@ public class ZendeskDialog {
 
 	private static View.OnClickListener buttonListener = new View.OnClickListener() {
 
-		@Override
 		public void onClick(View v) {
 			switch (v.getId()) {
 			case DialogInterface.BUTTON1:
