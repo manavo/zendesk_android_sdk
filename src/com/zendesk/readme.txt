@@ -32,11 +32,12 @@ How to integrate Zendesk into your Android Application
 
 - Optionally you can configure everything programatically using the Dialog Builder style API
 
-    ZendeskDialog.Builder(this)
+	new ZendeskDialog(this)
         .setTitle("custom title")
         .setDescription("custom description")
         .setUrl("subdomain.zendesk.com")
 		.setTag("dropbox")
-        .create();
+    	.setEmail("email@example.com")
+    	.show();
 
 
