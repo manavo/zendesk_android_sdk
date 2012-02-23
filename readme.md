@@ -17,12 +17,13 @@
 
 ```<meta-data android:name="zendesk_title" android:value="Your Title"/>	
 ```
+
 *Note: both <meta-data> tags need to be inside the <application> tag.
 
 - Invoke the builder and create the dialog by inserting the following code (usually in your onCreateDialog method of your Activity).
 	
 ```java
-ZendeskDialog.Builder(this).create().show();
+new ZendeskDialog(this).show();
 ```
 
 - Optionally you can override the default description text in the dialog from within the manifest
