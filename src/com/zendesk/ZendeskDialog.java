@@ -11,6 +11,7 @@ import java.net.URLEncoder;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -22,106 +23,153 @@ import android.text.InputType;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.LinearLayout.LayoutParams;
 
 public class ZendeskDialog {
-	public static final String TAG = "Zendesk";
-	private static final String TITLE_DEFAULT = "Title";
-	private static final String DESCRIPTION_DEFAULT = "How may we help you? Please fill in details below, and we'll get back to you as soon as possible.";
-	private static final String TAG_DEFAULT = "dropbox";
+	public final String TAG = "Zendesk";
+	private final String TITLE_DEFAULT = "Support";
+	private final String DESCRIPTION_DEFAULT = "How may we help you? Please fill in details below, and we'll get back to you as soon as possible.";
+	private final String TAG_DEFAULT = "dropbox";
 
-	private static String title;
-	private static String description;
-	private static String url;
-	private static String tag;
+	private String email;
+	private String title;
+	private String description;
+	private String url;
+	private String tag;
 
-	private static Context context;
-	private static View dialogView;
-	private static Handler toastHandler;
+	private Context context;
+	private View dialogView;
+	private Handler toastHandler;
 
-	private static TextView descriptionTV;
-	private static EditText descriptionET;
-	private static TextView subjectTV;
-	private static EditText subjectET;
-	private static TextView emailTV;
-	private static EditText emailET;
+	private TextView descriptionTV;
+	private EditText descriptionET;
+	private TextView subjectTV;
+	private EditText subjectET;
+	private TextView emailTV;
+	private EditText emailET;
 
-	private static AlertDialog aDialog;
+	private AlertDialog aDialog;
 
-	private ZendeskDialog(Context context) {
-		ZendeskDialog.context = context;
+	public ZendeskDialog(Context context) {
+		this.context = context;
 		dialogView = createDialogView(context);
-		aDialog = new AlertDialog.Builder(context).setTitle(TITLE_DEFAULT).setView(dialogView).create();
+		aDialog = new AlertDialog.Builder(context).setTitle(TITLE_DEFAULT).setView(dialogView).setPositiveButton("Send", null).setNegativeButton("Cancel", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				resetDialogView();
+			}
+		}).create();
 	}
 
-	public static ZendeskDialog Builder(Context context) {
-		return new ZendeskDialog(context);
+	public ZendeskDialog setEmail(String email) {
+		this.email = email;
+		return this;
 	}
 
 	public ZendeskDialog setTitle(String title) {
-		ZendeskDialog.title = title;
-		return new ZendeskDialog(ZendeskDialog.context);
+		this.title = title;
+		return this;
 	}
 
 	public ZendeskDialog setDescription(String description) {
-		ZendeskDialog.description = description;
-		return new ZendeskDialog(ZendeskDialog.context);
+		this.description = description;
+		return this;
 	}
 
 	public ZendeskDialog setUrl(String url) {
-		ZendeskDialog.url = url;
-		return new ZendeskDialog(ZendeskDialog.context);
+		this.url = url;
+		return this;
 	}
 	
 	public ZendeskDialog setTag(String tag) {
-		ZendeskDialog.tag = tag;
-		return new ZendeskDialog(ZendeskDialog.context);
+		this.tag = tag;
+		return this;
 	}
 
-	public AlertDialog create() {
+	public ZendeskDialog show() {
 		// set Dialog Title
-		if (ZendeskDialog.title != null)
-			aDialog.setTitle(ZendeskDialog.title);
+		if (this.title != null)
+			aDialog.setTitle(this.title);
 		else if (getMetaDataByKey("zendesk_title") != null)
 			aDialog.setTitle(getMetaDataByKey("zendesk_title"));
 
+		// set Dialog Email value
+		if (this.email != null)
+			emailET.setText(this.email);
+
 		// set Dialog description
 		descriptionTV.setText(DESCRIPTION_DEFAULT);
-		if (ZendeskDialog.description != null)
-			descriptionTV.setText(ZendeskDialog.description);
+		if (this.description != null)
+			descriptionTV.setText(this.description);
 		else if (getMetaDataByKey("zendesk_description") != null)
 			descriptionTV.setText(getMetaDataByKey("zendesk_description"));
 
-		if (ZendeskDialog.tag == null){ // not already configured programatically
+		if (this.tag == null){ // not already configured programatically
 			String tagConfig = getMetaDataByKey("zendesk_tag");
 			if (tagConfig != null){
-				ZendeskDialog.tag = getMetaDataByKey("zendesk_tag");
+				this.tag = getMetaDataByKey("zendesk_tag");
 			}
 			else{
-				ZendeskDialog.tag = TAG_DEFAULT;
+				this.tag = TAG_DEFAULT;
 			}
 		}
 		
 		// set Dialog url
-		if (ZendeskDialog.url == null)
-			ZendeskDialog.url = getMetaDataByKey("zendesk_url");
+		if (this.url == null)
+			this.url = getMetaDataByKey("zendesk_url");
 
-		if (ZendeskDialog.url != null) {
-			return aDialog;
+		if (this.url != null) {
+			aDialog.show();
+			
+			// alter the click listener, so the dialog doesn't close by default
+			aDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (descriptionET.length() != 0 && subjectET.length() != 0 && emailET.length() != 0) {
+						toastHandler = new Handler() {
+							public void handleMessage(Message msg) {
+								super.handleMessage(msg);
+								// notify to user here
+								String message = msg.getData().getString("submit");
+								if (message.equals("successfully"))
+									message = "Your request has successfully been submitted";
+								else
+									message = "Your request couldn't be submitted, please try again";
+								Toast.makeText(ZendeskDialog.this.context, message, Toast.LENGTH_SHORT).show();
+							}
+						};
+						new Thread(runnable).start();
+					} else {
+						if (descriptionET.length() == 0)
+							descriptionTV.setTextColor(Color.RED);
+						else
+							descriptionTV.setTextColor(Color.WHITE);
+						if (subjectET.length() == 0)
+							subjectTV.setTextColor(Color.RED);
+						else
+							subjectTV.setTextColor(Color.WHITE);
+						if (emailET.length() == 0)
+							emailTV.setTextColor(Color.RED);
+						else
+							emailTV.setTextColor(Color.WHITE);
+
+						Toast.makeText(ZendeskDialog.this.context, "Please fill in all the fields", Toast.LENGTH_SHORT).show();
+					}
+				}
+			});
 		} else {
 			Log.e(TAG, "Meta Data with key \"zendesk_url\" couldn't be found in AndroidManifext.xml");
-			return null;
 		}
+		return this;
 	}
 
-	private static String getMetaDataByKey(String key) {
+	private String getMetaDataByKey(String key) {
 		PackageManager manager = null;
 		ApplicationInfo info = null;
 		String valueByKey = "";
@@ -137,7 +185,7 @@ public class ZendeskDialog {
 		return valueByKey;
 	}
 
-	static Runnable runnable = new Runnable() {
+	Runnable runnable = new Runnable() {
 		public void run() {
 			Message message = new Message();
 			String description = descriptionET.getText().toString();
@@ -146,12 +194,12 @@ public class ZendeskDialog {
 
 			// Submit query here
 			try {
-				String server = ZendeskDialog.url;
+				String server = ZendeskDialog.this.url;
 				String dir = "/requests/mobile_api/create.json";
 				String reqDesc = "description=" + URLEncoder.encode(description, "UTF-8");
 				String reqEmail = "email=" + URLEncoder.encode(email, "UTF-8");
 				String reqSubject = "subject=" + URLEncoder.encode(subject, "UTF-8");
-				String reqTag = "set_tags=" + URLEncoder.encode(ZendeskDialog.tag, "UTF-8");
+				String reqTag = "set_tags=" + URLEncoder.encode(ZendeskDialog.this.tag, "UTF-8");
 				
 				String reqContent = reqDesc + "&" + reqEmail + "&" + reqSubject + "&" + reqTag;
 				String requestUrl = "http://" + server + dir;
@@ -183,7 +231,7 @@ public class ZendeskDialog {
 				}
 				bufferReader.close();
 	
-    aDialog.dismiss();
+				aDialog.dismiss();
 				resetDialogView();
 			
 				message.getData().putString("submit", "successfully");
@@ -197,7 +245,7 @@ public class ZendeskDialog {
 		}
 	};
 
-	private static View createDialogView(Context context) {
+	private View createDialogView(Context context) {
 		LinearLayout llRoot = new LinearLayout(context);
 		llRoot.setOrientation(LinearLayout.VERTICAL);
 		llRoot.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
@@ -218,11 +266,13 @@ public class ZendeskDialog {
 		descriptionTV.setTextColor(Color.WHITE);
 		descriptionET = new EditText(context);
 		descriptionET.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
-		descriptionET.setMinLines(2);
-		descriptionET.setMaxLines(2);
+		descriptionET.setMinLines(3);
+		descriptionET.setMaxLines(3);
 		descriptionET.setInputType(InputType.TYPE_CLASS_TEXT 
 				| InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-				| InputType.TYPE_TEXT_FLAG_AUTO_CORRECT );
+				| InputType.TYPE_TEXT_FLAG_AUTO_CORRECT 
+				| InputType.TYPE_TEXT_FLAG_MULTI_LINE );
+		descriptionET.setGravity(Gravity.TOP);
 
 		subjectTV = new TextView(context);
 		subjectTV.setText("Subject:");
@@ -255,26 +305,7 @@ public class ZendeskDialog {
 		Bitmap poweredBy = BitmapFactory.decodeStream(in);
 		poweredByIV.setImageBitmap(poweredBy);
 
-		LinearLayout llButton = new LinearLayout(context);
-		llButton.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
-		llButton.setOrientation(LinearLayout.HORIZONTAL);
-		llButton.setBackgroundColor(0xFFBDBDBD);
-		llButton.setPadding(0, 4, 0, 0);
-
-		Button submit = new Button(context);
-		submit.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 1));
-		submit.setText("Submit Query");
-		submit.setId(DialogInterface.BUTTON1);
-		submit.setOnClickListener(buttonListener);
-
-		Button cancel = new Button(context);
-		cancel.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 1));
-		cancel.setText("Cancel");
-		cancel.setId(DialogInterface.BUTTON2);
-		cancel.setOnClickListener(buttonListener);
-
 		llRoot.addView(sv);
-		llRoot.addView(llButton);
 
 		sv.addView(llContent);
 
@@ -291,12 +322,10 @@ public class ZendeskDialog {
 		llBottom.addView(poweredByTV);
 		llBottom.addView(poweredByIV);
 
-		llButton.addView(submit);
-		llButton.addView(cancel);
 		return llRoot;
 	}
 
-	private static void resetDialogView() {
+	private void resetDialogView() {
 		descriptionET.setText("");
 		subjectET.setText("");
 		emailET.setText("");
@@ -305,48 +334,4 @@ public class ZendeskDialog {
 		emailTV.setTextColor(Color.WHITE);
 	}
 
-	private static View.OnClickListener buttonListener = new View.OnClickListener() {
-
-		public void onClick(View v) {
-			switch (v.getId()) {
-			case DialogInterface.BUTTON1:
-				if (descriptionET.length() != 0 && subjectET.length() != 0 && emailET.length() != 0) {
-					toastHandler = new Handler() {
-						public void handleMessage(Message msg) {
-							super.handleMessage(msg);
-							// notify to user here
-							String message = msg.getData().getString("submit");
-							if (message.equals("successfully"))
-								message = "Your request has successfully been submitted";
-							else
-								message = "Your request couldn't be submitted, please try again";
-							Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
-						}
-					};
-					new Thread(runnable).start();
-				} else {
-					if (descriptionET.length() == 0)
-						descriptionTV.setTextColor(Color.RED);
-					else
-						descriptionTV.setTextColor(Color.WHITE);
-					if (subjectET.length() == 0)
-						subjectTV.setTextColor(Color.RED);
-					else
-						subjectTV.setTextColor(Color.WHITE);
-					if (emailET.length() == 0)
-						emailTV.setTextColor(Color.RED);
-					else
-						emailTV.setTextColor(Color.WHITE);
-
-					Toast.makeText(context, "Please fill out all Fields", Toast.LENGTH_SHORT).show();
-				}
-				break;
-			case DialogInterface.BUTTON2:
-				aDialog.dismiss();
-				resetDialogView();
-				break;
-			}
-		}
-
-	};
 }
