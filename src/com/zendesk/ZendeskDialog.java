@@ -9,6 +9,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -55,6 +56,8 @@ public class ZendeskDialog {
 	private EditText emailET;
 
 	private AlertDialog aDialog;
+	
+	private ProgressDialog progressDialog;
 
 	public ZendeskDialog(Context context) {
 		this.context = context;
@@ -65,6 +68,10 @@ public class ZendeskDialog {
 				resetDialogView();
 			}
 		}).create();
+		
+		this.progressDialog = new ProgressDialog(context);
+		this.progressDialog.setMessage("Sending...");
+		this.progressDialog.setCancelable(false);
 	}
 
 	public ZendeskDialog setEmail(String email) {
@@ -142,8 +149,10 @@ public class ZendeskDialog {
 								else
 									message = "Your request couldn't be submitted, please try again";
 								Toast.makeText(ZendeskDialog.this.context, message, Toast.LENGTH_SHORT).show();
+								ZendeskDialog.this.progressDialog.dismiss();
 							}
 						};
+						ZendeskDialog.this.progressDialog.show();
 						new Thread(runnable).start();
 					} else {
 						if (descriptionET.length() == 0)
