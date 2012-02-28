@@ -58,6 +58,8 @@ public class ZendeskDialog {
 	private AlertDialog aDialog;
 	
 	private ProgressDialog progressDialog;
+	
+	private Handler successCallback = null;
 
 	public ZendeskDialog(Context context) {
 		this.context = context;
@@ -72,6 +74,11 @@ public class ZendeskDialog {
 		this.progressDialog = new ProgressDialog(context);
 		this.progressDialog.setMessage("Sending...");
 		this.progressDialog.setCancelable(false);
+	}
+	
+	public ZendeskDialog setSuccessCallback(Handler h) {
+		this.successCallback = h;
+		return this;
 	}
 
 	public ZendeskDialog setEmail(String email) {
@@ -242,6 +249,10 @@ public class ZendeskDialog {
 	
 				aDialog.dismiss();
 				resetDialogView();
+				
+				if (ZendeskDialog.this.successCallback != null) {
+					ZendeskDialog.this.successCallback.sendEmptyMessage(0);
+				}
 			
 				message.getData().putString("submit", "successfully");
 				toastHandler.sendMessage(message);

@@ -47,3 +47,16 @@ new ZendeskDialog(this).show();
     	.setEmail("email@example.com")
     	.show();
 ```
+
+- You can also specify a callback for when someone actually sends the form (for analytics purposes perhaps?). It just sends an empty message to your handler to let you know that it has been sent.
+
+```java
+	new ZendeskDialog(this)
+		.setSuccessCallback(new Handler() {
+    		public void handleMessage(Message msg) {
+				super.handleMessage(msg);
+				
+				// do something here, like track through your analytics library the fact that it has been sent
+			}
+    	})
+```
