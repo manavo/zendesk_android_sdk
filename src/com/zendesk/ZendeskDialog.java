@@ -218,7 +218,7 @@ public class ZendeskDialog {
 				String reqTag = "set_tags=" + URLEncoder.encode(ZendeskDialog.this.tag, "UTF-8");
 				
 				String reqContent = reqDesc + "&" + reqEmail + "&" + reqSubject + "&" + reqTag;
-				String requestUrl = "http://" + server + dir;
+				String requestUrl = "https://" + server + dir;
 
 				URL url = new URL(requestUrl);
 				Log.d(TAG, "Sending Request " + url.toExternalForm());
